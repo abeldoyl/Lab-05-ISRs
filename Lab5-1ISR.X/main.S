@@ -1,7 +1,7 @@
     ; Abel Doyle
     ; RCET3373
-    ; Lab2-1PIC
-    ; https://github.com/abeldoyl/Lab-02-PIC-I-O/tree/main/Lab2-1PIC/Lab2-1PIC.X
+    ; Lab5-1ISR
+    ; https://github.com/abeldoyl/Lab-05-ISRs/tree/main/Lab5-1ISR.X
     
 ; PIC16F883 Configuration Bit Settings
 
