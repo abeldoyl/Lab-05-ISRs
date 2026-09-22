@@ -85,8 +85,8 @@ ISRHandler:
     ;Swaps are used because they do not affect the status bits
     MOVWF STATUS_TEMP ;Save status to bank zero STATUS_TEMP register
     
-    INCF PORTC
-    BCF INTCON,1
+    INCF PORTC	    ;Increments PORTC on every interrupt
+    BCF INTCON,1    ;Clears the flag on RBo/INT
     goto LeaveISR
     
 LeaveISR:
