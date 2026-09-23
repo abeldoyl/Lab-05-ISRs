@@ -98,14 +98,14 @@ ISRHandler:
     goto LeaveISR
     
 IncrementPORTC:
-    MOVF PORTB,W
+    MOVF PORTB,W    ;Clear mismatch codition on PORTB
     INCF PORTC,F    ;Increments PORTC on every interrupt
-    BCF INTCON,0
+    BCF INTCON,0    ;Clear interrupt flag on RB4
     goto LeaveISR
 
 ClearPORTC:
-    CLRF PORTC
-    BCF INTCON,1
+    CLRF PORTC	    ;Clear output count on PORTC
+    BCF INTCON,1    ;Clear interrupt flag on INT
     goto LeaveISR
     
 LeaveISR:
