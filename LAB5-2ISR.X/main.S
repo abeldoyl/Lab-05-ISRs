@@ -1,7 +1,7 @@
     ; Abel Doyle
     ; RCET3373
-    ; Lab5-1ISR
-    ; https://github.com/abeldoyl/Lab-05-ISRs/tree/main/Lab5-1ISR.X
+    ; Lab5-2ISR
+    ; https://github.com/abeldoyl/Lab-05-ISRs/tree/main/Lab5-2ISR.X
     
 ; PIC16F883 Configuration Bit Settings
 
@@ -53,6 +53,8 @@ Setup:
     BCF 0x03,6      ;Set Bank 1
     BSF 0x03,5      ;"
     CLRF TRISA      ;Making PORTA an output
+    MOVLW 0x11
+    MOVWF TRISB
     CLRF TRISC	    ;Making PORTC an output
  
     ; Bank 3
@@ -65,8 +67,11 @@ Setup:
     BCF 0x03,6      ;Set Bank 1
     BSF 0x03,5	    ;"
     BCF OPTION_REG,6;Allows for interrupt on falling edge
+    BSF IOCB,4
+    BCF INTCON,0    ;Clears any flags from PORTB
     BCF INTCON,1
-    BSF INTCON,4    ;Enables the INT external Interrupt bit
+    BSF INTCON,3    ;Enabels PORTB Interrupts
+    BSF INTCON,4
     BSF INTCON,7    ;Enables global interrupts
     
     BCF 0x03,6      ;Set Bank 0
@@ -76,17 +81,31 @@ Setup:
 Main:
     ; main code goes here
     MOVLW 0x01      ;1 TCY
-    XORWF PORTA,1   ;1 TCY
+    XORWF PORTA,F   ;1 TCY
     goto Main
     
 ISRHandler:
     MOVWF W_TEMP ;Copy W to TEMP register
     SWAPF STATUS,W ;Swap status to be saved into W
+    CLRF STATUS	;Set to Bank 0
     ;Swaps are used because they do not affect the status bits
     MOVWF STATUS_TEMP ;Save status to bank zero STATUS_TEMP register
     
-    INCF PORTC	    ;Increments PORTC on every interrupt
-    BCF INTCON,1    ;Clears the flag on RBo/INT
+    BTFSC INTCON,0	;Tests for PORTB (RB4) interrupt flag
+    goto IncrementPORTC
+    BTFSC INTCON,1	;Tests for INT interrupt flag
+    goto ClearPORTC
+    goto LeaveISR
+    
+IncrementPORTC:
+    MOVF PORTB,W
+    INCF PORTC,F    ;Increments PORTC on every interrupt
+    BCF INTCON,0
+    goto LeaveISR
+
+ClearPORTC:
+    CLRF PORTC
+    BCF INTCON,1
     goto LeaveISR
     
 LeaveISR:
