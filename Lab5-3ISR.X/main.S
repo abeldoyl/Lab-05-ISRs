@@ -1,7 +1,7 @@
     ; Abel Doyle
     ; RCET3373
-    ; Lab5-1ISR
-    ; https://github.com/abeldoyl/Lab-05-ISRs/tree/main/Lab5-1ISR.X
+    ; Lab5-3ISR
+    ; https://github.com/abeldoyl/Lab-05-ISRs/tree/main/Lab5-3ISR.X
     
 ; PIC16F883 Configuration Bit Settings
 
@@ -27,6 +27,8 @@
 #include <xc.inc>
   W_TEMP EQU 0x70
   STATUS_TEMP EQU 0x71
+  PORTB_OLD EQU 0x72
+  CHANGED EQU 0x73
 ; Reset Vector at 0000h. Execution starts here after reset.
 PSECT resetVect,class=CODE,delta=2
 ResetVector: 
@@ -50,10 +52,15 @@ Setup:
     CLRF PORTC	    ;Clearing PORTC on reset
  
     ; Bank 1
-    BCF 0x03,6      ;Set Bank 1
-    BSF 0x03,5      ;"
-    CLRF TRISA      ;Making PORTA an output
-    CLRF TRISC	    ;Making PORTC an output
+    BCF 0x03,6	    ;Set Bank 1
+    BSF 0x03,5	    ;"
+    CLRF TRISA	    ;PORTA input
+    CLRF TRISC	    ;PORTC input
+    MOVLW 0xFF
+    MOVWF TRISB     ;PORTB inputs
+    MOVWF WPUB      ;weak pull-ups on all pins
+    MOVWF IOCB      ;interrupt-on-change on RB0-RB7
+    BCF OPTION_REG,7;Pull-ups enabled
  
     ; Bank 3
     BSF 0x03,6      ;Set Bank 3
@@ -65,8 +72,9 @@ Setup:
     BCF 0x03,6      ;Set Bank 1
     BSF 0x03,5	    ;"
     BCF OPTION_REG,6;Allows for interrupt on falling edge
-    BCF INTCON,1
-    BSF INTCON,4    ;Enables the INT external Interrupt bit
+    BCF INTCON,0
+    BSF INTCON,3    ;Enables the INT external Interrupt bit
+    BCF INTCON,4    ;INT disabled
     BSF INTCON,7    ;Enables global interrupts
     
     BCF 0x03,6      ;Set Bank 0
@@ -75,8 +83,6 @@ Setup:
     
 Main:
     ; main code goes here
-    MOVLW 0x01      ;1 TCY
-    XORWF PORTA,1   ;1 TCY
     goto Main
     
 ISRHandler:
@@ -85,9 +91,81 @@ ISRHandler:
     ;Swaps are used because they do not affect the status bits
     MOVWF STATUS_TEMP ;Save status to bank zero STATUS_TEMP register
     
-    INCF PORTC	    ;Increments PORTC on every interrupt
-    BCF INTCON,1    ;Clears the flag on RBo/INT
-    goto LeaveISR
+    MOVF PORTB,W ;Compare current PORTB vs. previous PORTB
+    XORWF PORTB_OLD,W
+    MOVWF CHANGED
+    
+    MOVF PORTB,W ;Save current PORTB for next comparison
+    MOVWF PORTB_OLD
+
+    MOVLW 0x00 ;Determine changed pin
+    BTFSC CHANGED,0
+    goto ShowPin0
+
+    BTFSC CHANGED,1
+    goto ShowPin1
+
+    BTFSC CHANGED,2
+    goto ShowPin2
+
+    BTFSC CHANGED,3
+    goto ShowPin3
+
+    BTFSC CHANGED,4
+    goto ShowPin4
+
+    BTFSC CHANGED,5
+    goto ShowPin5
+
+    BTFSC CHANGED,6
+    goto ShowPin6
+
+    BTFSC CHANGED,7
+    goto ShowPin7
+
+
+ShowPin0:
+    MOVLW 0x00
+    MOVWF PORTA
+    goto ClearIOC
+
+ShowPin1:
+    MOVLW 0x01
+    MOVWF PORTA
+    goto ClearIOC
+
+ShowPin2:
+    MOVLW 0x02
+    MOVWF PORTA
+    goto ClearIOC
+
+ShowPin3:
+    MOVLW 0x03
+    MOVWF PORTA
+    goto ClearIOC
+
+ShowPin4:
+    MOVLW 0x04
+    MOVWF PORTA
+    goto ClearIOC
+
+ShowPin5:
+    MOVLW 0x05
+    MOVWF PORTA
+    goto ClearIOC
+
+ShowPin6:
+    MOVLW 0x06
+    MOVWF PORTA
+    goto ClearIOC
+
+ShowPin7:
+    MOVLW 0x07
+    MOVWF PORTA
+    goto ClearIOC
+    
+ClearIOC:
+    BCF INTCON,0
     
 LeaveISR:
     SWAPF STATUS_TEMP,W ;Swap STATUS_TEMP register into W
