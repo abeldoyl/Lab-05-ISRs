@@ -28,7 +28,8 @@
   W_TEMP EQU 0x70
   STATUS_TEMP EQU 0x71
   PORTB_OLD EQU 0x72
-  CHANGED EQU 0x73
+  PORTB_NEW EQU 0x73
+  CHANGED EQU 0x74
 ; Reset Vector at 0000h. Execution starts here after reset.
 PSECT resetVect,class=CODE,delta=2
 ResetVector: 
@@ -91,81 +92,64 @@ ISRHandler:
     ;Swaps are used because they do not affect the status bits
     MOVWF STATUS_TEMP ;Save status to bank zero STATUS_TEMP register
     
-    MOVF PORTB,W ;Compare current PORTB vs. previous PORTB
+    ;Compare current PORTB vs. previous PORTB
+    MOVF PORTB,W
+    MOVWF PORTB_NEW
     XORWF PORTB_OLD,W
     MOVWF CHANGED
     
-    MOVF PORTB,W ;Save current PORTB for next comparison
+    ;Save current PORTB for next comparison
+    MOVF PORTB_NEW,W
     MOVWF PORTB_OLD
 
-    MOVLW 0x00 ;Determine changed pin
-    BTFSC CHANGED,0
-    goto ShowPin0
+    ;Code block for what value on the LEDs is displayed based on what PORTB pin caused the interrupt
+    BTFSC   CHANGED,0     
+    goto    Display0             
+    BTFSC   CHANGED,1     
+    goto    Display1           
+    BTFSC   CHANGED,2     
+    goto    Display2            
+    BTFSC   CHANGED,3     
+    goto    Display3             
+    BTFSC   CHANGED,4     
+    goto    Display4         
+    BTFSC   CHANGED,5     
+    goto    Display5         
+    BTFSC   CHANGED,6     
+    goto    Display6         
+    BTFSC   CHANGED,7     
+    goto    Display7         
+    goto    IOC_Flag         
 
-    BTFSC CHANGED,1
-    goto ShowPin1
+Display0:   
+    MOVLW   0x00             ;Display 000 on PortA
+    goto    SetDisplay
+Display1:   
+    MOVLW   0x01             ;Display 001 on PortA
+    goto    SetDisplay
+Display2:
+    MOVLW   0x02             ;Display 010 on PortA
+    goto    SetDisplay
+Display3:
+    MOVLW   0x03             ;Display 011 on PortA
+    goto    SetDisplay
+Display4:
+    MOVLW   0x04             ;Display 100 on PortA
+    goto    SetDisplay
+Display5:
+    MOVLW   0x05             ;Display 101 on PortA
+    goto    SetDisplay
+Display6:
+    MOVLW   0x06             ;Display 110 on PortA
+    goto    SetDisplay
+Display7:
+    MOVLW   0x07             ;Display 111 on PortA
 
-    BTFSC CHANGED,2
-    goto ShowPin2
+SetDisplay:
+    MOVWF   PORTA            ;Display the selected value on PORTA
 
-    BTFSC CHANGED,3
-    goto ShowPin3
-
-    BTFSC CHANGED,4
-    goto ShowPin4
-
-    BTFSC CHANGED,5
-    goto ShowPin5
-
-    BTFSC CHANGED,6
-    goto ShowPin6
-
-    BTFSC CHANGED,7
-    goto ShowPin7
-
-
-ShowPin0:
-    MOVLW 0x00
-    MOVWF PORTA
-    goto ClearIOC
-
-ShowPin1:
-    MOVLW 0x01
-    MOVWF PORTA
-    goto ClearIOC
-
-ShowPin2:
-    MOVLW 0x02
-    MOVWF PORTA
-    goto ClearIOC
-
-ShowPin3:
-    MOVLW 0x03
-    MOVWF PORTA
-    goto ClearIOC
-
-ShowPin4:
-    MOVLW 0x04
-    MOVWF PORTA
-    goto ClearIOC
-
-ShowPin5:
-    MOVLW 0x05
-    MOVWF PORTA
-    goto ClearIOC
-
-ShowPin6:
-    MOVLW 0x06
-    MOVWF PORTA
-    goto ClearIOC
-
-ShowPin7:
-    MOVLW 0x07
-    MOVWF PORTA
-    goto ClearIOC
-    
-ClearIOC:
-    BCF INTCON,0
+IOC_Flag:
+    BCF     INTCON,0         ;Clear the RBIF flag after PORTB was reread
     
 LeaveISR:
     SWAPF STATUS_TEMP,W ;Swap STATUS_TEMP register into W
@@ -176,4 +160,3 @@ LeaveISR:
     RETFIE
   
 End
-    
